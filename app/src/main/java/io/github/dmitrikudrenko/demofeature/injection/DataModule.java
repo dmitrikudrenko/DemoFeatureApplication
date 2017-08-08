@@ -1,9 +1,6 @@
 package io.github.dmitrikudrenko.demofeature.injection;
 
 
-import javax.inject.Named;
-import javax.inject.Singleton;
-
 import dagger.Module;
 import dagger.Provides;
 import io.github.dmitrikudrenko.demofeature.cache.Cache;
@@ -11,8 +8,13 @@ import io.github.dmitrikudrenko.demofeature.cache.CacheImplementation;
 import io.github.dmitrikudrenko.demofeature.cache.DemoCacheImplementation;
 import io.github.dmitrikudrenko.demofeature.data.DataProvider;
 import io.github.dmitrikudrenko.demofeature.data.DataProviderImplementation;
+import io.github.dmitrikudrenko.demofeature.data.refreshstrategy.DataRefreshStrategy;
+import io.github.dmitrikudrenko.demofeature.data.refreshstrategy.DemoRefreshStrategyImplementation;
+import io.github.dmitrikudrenko.demofeature.data.refreshstrategy.RealRefreshStrategyImplementation;
 import io.github.dmitrikudrenko.demofeature.network.Api;
 import io.github.dmitrikudrenko.demofeature.network.ApiImplementation;
+
+import javax.inject.Singleton;
 
 @Module
 public class DataModule {
@@ -29,25 +31,43 @@ public class DataModule {
     }
 
     @Provides
-    @Named("real_cache")
+    @RealCache
     @Singleton
     public Cache provideRealCache() {
         return new CacheImplementation();
     }
 
     @Provides
-    @Named("demo_cache")
+    @DemoCache
     @Singleton
     public Cache provideDemoCache() {
         return new DemoCacheImplementation();
     }
 
     @Provides
-    public DataProvider provideDataProvider(Api api, @Named("real_cache") Cache realCache, @Named("demo_cache") Cache demoCache) {
+    @RealRefreshStrategy
+    @Singleton
+    public DataRefreshStrategy provideRealDataRefreshStrategy() {
+        return new RealRefreshStrategyImplementation();
+    }
+
+    @Provides
+    @DemoRefreshStrategy
+    @Singleton
+    public DataRefreshStrategy provideDemoDataRefreshStrategy() {
+        return new DemoRefreshStrategyImplementation();
+    }
+
+    @Provides
+    public DataProvider provideDataProvider(
+            Api api,
+            @RealCache Cache realCache, @DemoCache Cache demoCache,
+            @RealRefreshStrategy DataRefreshStrategy realDataRefreshStrategy,
+            @DemoRefreshStrategy DataRefreshStrategy demoDataRefreshStrategy) {
         if (demo) {
-            return new DataProviderImplementation(true, api, demoCache);
+            return new DataProviderImplementation(demoDataRefreshStrategy, api, demoCache);
         } else {
-            return new DataProviderImplementation(false, api, realCache);
+            return new DataProviderImplementation(realDataRefreshStrategy, api, realCache);
         }
     }
 }

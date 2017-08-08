@@ -1,11 +1,9 @@
 package io.github.dmitrikudrenko.demofeature.data;
 
 
-import java.util.ArrayList;
-import java.util.List;
-
 import io.github.dmitrikudrenko.demofeature.cache.Cache;
 import io.github.dmitrikudrenko.demofeature.cache.model.Item;
+import io.github.dmitrikudrenko.demofeature.data.refreshstrategy.DataRefreshStrategy;
 import io.github.dmitrikudrenko.demofeature.network.Api;
 import io.github.dmitrikudrenko.demofeature.network.dto.ItemDto;
 import rx.Observable;
@@ -15,13 +13,16 @@ import rx.functions.Action1;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class DataProviderImplementation implements DataProvider {
-    private final boolean demo;
+    private final DataRefreshStrategy refreshStrategy;
     private final Api api;
     private final Cache cache;
 
-    public DataProviderImplementation(boolean demo, Api api, Cache cache) {
-        this.demo = demo;
+    public DataProviderImplementation(DataRefreshStrategy refreshStrategy, Api api, Cache cache) {
+        this.refreshStrategy = refreshStrategy;
         this.api = api;
         this.cache = cache;
     }
@@ -32,7 +33,7 @@ public class DataProviderImplementation implements DataProvider {
                 .doOnSubscribe(new Action0() {
                     @Override
                     public void call() {
-                        if (!demo) {
+                        if (refreshStrategy.updateData()) {
                             updateItems();
                         }
                     }
